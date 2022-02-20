@@ -9,6 +9,8 @@ describe('readonly', () => {
     expect(wrapped).not.toBe(original)
     expect(wrapped.foo).toBe(1)
     expect(isReadonly(wrapped)).toBeTruthy()
+    expect(isReadonly(wrapped.bar)).toBeTruthy()
+    expect(isReadonly(original.bar)).toBeFalsy()
     expect(isReadonly(original)).toBeFalsy()
   })
 

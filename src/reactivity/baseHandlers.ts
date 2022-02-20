@@ -1,5 +1,6 @@
+import { isObject } from '../shared'
 import { track, trigger } from './effect'
-import { ReactiveFlags } from './reactive'
+import { reactive, ReactiveFlags, readonly } from './reactive'
 
 const createGetter = (isReadonly: boolean = false) => {
   return (target: object, key: string | symbol) => {
@@ -9,6 +10,10 @@ const createGetter = (isReadonly: boolean = false) => {
       return !isReadonly
     } else if (key === ReactiveFlags.IS_READONLY) {
       return isReadonly
+    }
+
+    if (isObject(res)) {
+      return isReadonly ? readonly(res) : reactive(res)
     }
 
     if (!isReadonly) {
