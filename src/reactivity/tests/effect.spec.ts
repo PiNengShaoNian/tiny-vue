@@ -10,7 +10,6 @@ describe('effct', () => {
 
     effect(() => {
       nextAge = user.age + 1
-      console.log(nextAge)
     })
 
     expect(nextAge).toBe(11)
