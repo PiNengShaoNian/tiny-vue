@@ -1,13 +1,22 @@
 import { extend } from '../shared'
 
+let activeEffect: ReactiveEffect | undefined
+let shouldTrack = false
+
 class ReactiveEffect {
   deps: Set<ReactiveEffect>[] = []
   active = true
   onStop?: Function
   constructor(public fn: Function, public scheduler?: Function) {}
   run() {
+    if (!this.active) {
+      return this.fn()
+    }
+    shouldTrack = true
     activeEffect = this
-    return this.fn()
+    const res = this.fn()
+    shouldTrack = false
+    return res
   }
 
   stop() {
@@ -23,6 +32,8 @@ const cleanupEffect = (effect: ReactiveEffect) => {
   for (const dep of effect.deps) {
     dep.delete(effect)
   }
+
+  effect.deps.length = 0
 }
 
 type Runner = Function & { effect: ReactiveEffect }
@@ -38,10 +49,10 @@ export const effect = (fn: Function, options?: EffectOptions): Runner => {
   return runner
 }
 
-let activeEffect: ReactiveEffect | undefined
-
 const targetMap = new Map<object, Map<string | symbol, Set<ReactiveEffect>>>()
 export const track = (target: any, key: string | symbol) => {
+  if (!isTracking(activeEffect)) return
+
   let depsMap = targetMap.get(target)
 
   if (!depsMap) {
@@ -56,10 +67,15 @@ export const track = (target: any, key: string | symbol) => {
     depsMap.set(key, dep)
   }
 
-  if (activeEffect) {
-    dep.add(activeEffect)
-    activeEffect.deps.push(dep)
-  }
+  if (dep.has(activeEffect)) return
+  dep.add(activeEffect)
+  activeEffect.deps.push(dep)
+}
+
+const isTracking = (
+  activeEffect: ReactiveEffect | undefined
+): activeEffect is ReactiveEffect => {
+  return shouldTrack && !!activeEffect
 }
 
 export const trigger = (target: any, key: string | symbol) => {
