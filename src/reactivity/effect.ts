@@ -2,7 +2,7 @@ class ReactiveEffect {
   constructor(public fn: Function) {}
   run() {
     activeEffect = this
-    this.fn()
+    return this.fn()
   }
 }
 
@@ -10,6 +10,8 @@ export const effect = (fn: Function) => {
   const _effect = new ReactiveEffect(fn)
 
   _effect.run()
+
+  return _effect.run.bind(_effect)
 }
 
 let activeEffect: ReactiveEffect | undefined
