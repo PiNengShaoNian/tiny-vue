@@ -35,3 +35,7 @@ export const isReadonly = (obj: any): boolean => {
 export const shallowReadonly = <T extends object>(raw: T): T => {
   return createActiveObject(raw, shallowReadonlyHandlers as ProxyHandler<T>)
 }
+
+export const isProxy = (obj: any) => {
+  return isReactive(obj) || isReadonly(obj)
+}
