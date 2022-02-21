@@ -14,6 +14,7 @@ type Ref<T> = {
 class RefImpl<T> {
   private _value: T
   private _rawValue: T
+  public __v_isRef = true
   dep = new Set<ReactiveEffect>()
   constructor(value: T) {
     this._value = convert(value)
@@ -41,4 +42,13 @@ export const ref = <T>(raw: T): Ref<T> => {
 
 const convert = <T>(value: T): T => {
   return isObject(value) ? reactive(value) : value
+}
+
+export const isRef = (ref: any): ref is Ref<unknown> => {
+  return ref?.['__v_isRef'] ?? false
+}
+
+export const unRef = <T>(ref: Ref<T>): T => {
+  if (isRef(ref)) return ref.value
+  else return ref
 }
