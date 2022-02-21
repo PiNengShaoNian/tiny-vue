@@ -3,7 +3,7 @@ import { extend } from '../shared'
 let activeEffect: ReactiveEffect | undefined
 let shouldTrack = false
 
-class ReactiveEffect {
+export class ReactiveEffect {
   deps: Set<ReactiveEffect>[] = []
   active = true
   onStop?: Function
@@ -51,7 +51,7 @@ export const effect = (fn: Function, options?: EffectOptions): Runner => {
 
 const targetMap = new Map<object, Map<string | symbol, Set<ReactiveEffect>>>()
 export const track = (target: any, key: string | symbol) => {
-  if (!isTracking(activeEffect)) return
+  if (!isTracking()) return
 
   let depsMap = targetMap.get(target)
 
@@ -67,21 +67,26 @@ export const track = (target: any, key: string | symbol) => {
     depsMap.set(key, dep)
   }
 
-  if (dep.has(activeEffect)) return
+  trackEffects(dep)
+}
+
+export const trackEffects = (dep: Set<ReactiveEffect>): void => {
+  if (!activeEffect || dep.has(activeEffect)) return
   dep.add(activeEffect)
   activeEffect.deps.push(dep)
 }
 
-const isTracking = (
-  activeEffect: ReactiveEffect | undefined
-): activeEffect is ReactiveEffect => {
+export const isTracking = (): boolean => {
   return shouldTrack && !!activeEffect
 }
 
 export const trigger = (target: any, key: string | symbol) => {
   const depsMap = targetMap.get(target)
   const dep = depsMap?.get(key)!
+  triggerEffects(dep)
+}
 
+export const triggerEffects = (dep: Set<ReactiveEffect>) => {
   for (const effect of dep) {
     if (effect.scheduler) effect.scheduler()
     else effect.run()
