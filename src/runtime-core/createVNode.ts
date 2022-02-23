@@ -1,7 +1,7 @@
 export type VNode = {
   type: ComponentType
   props: unknown
-  children: unknown
+  children: undefined | string | VNode[]
 }
 
 export type Component = { render(): VNode; setup?: () => unknown }
