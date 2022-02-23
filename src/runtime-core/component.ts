@@ -49,7 +49,7 @@ const handleSetupResult = (
   instance: ComponentInternalInstance,
   setupResult: any
 ) => {
-  if (typeof setupComponent === 'object') {
+  if (typeof setupResult === 'object') {
     instance.setupState = setupResult
   }
 
@@ -58,8 +58,8 @@ const handleSetupResult = (
 
 function finishComponentSetup(instance: ComponentInternalInstance) {
   const Component = instance.type
-
-  if (!Component.render) {
-    instance.render = Component.render
-  }
+  instance.render = Component.render
+  // if (!Component.render) {
+  //   instance.render = Component.render
+  // }
 }
