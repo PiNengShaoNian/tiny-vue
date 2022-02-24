@@ -5,7 +5,19 @@ export const App = {
     window.appInstance = this
     return h('div', { id: 'root', class: ['red', 'black'] }, [
       h('p', { class: 'red' }, 'hi, '),
-      h('p', { class: 'blue' }, this.msg),
+      h(
+        'p',
+        {
+          class: 'blue',
+          onClick() {
+            console.log(this)
+          },
+          onMousedown() {
+            console.log('mousedown')
+          },
+        },
+        this.msg
+      ),
     ])
   },
   setup() {

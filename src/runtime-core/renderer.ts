@@ -46,7 +46,14 @@ const mountElement = (vnode: VNode, container: HTMLElement) => {
 
   for (const key in props as object) {
     const val = (props as any)[key]
-    el.setAttribute(key, val)
+    const isOn = (key: string) => /^on[A-Z]/.test(key)
+
+    if (isOn(key)) {
+      const event = key.slice(2).toLowerCase()
+      el.addEventListener(event, (props as any)[key])
+    } else {
+      el.setAttribute(key, val)
+    }
   }
 
   container.appendChild(el)
