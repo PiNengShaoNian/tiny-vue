@@ -2,6 +2,7 @@ export type VNode = {
   type: ComponentType
   props: unknown
   children: undefined | string | VNode[]
+  el: HTMLElement | null
 }
 
 export type Component = { render(): VNode; setup?: () => unknown }
@@ -17,6 +18,7 @@ export const createVNode = (
     type,
     props,
     children,
+    el: null,
   }
   return vnode
 }

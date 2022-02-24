@@ -25,7 +25,7 @@ const processComponent = (vnode: VNode, container: HTMLElement) => {
 const mountComponent = (vnode: VNode, container: HTMLElement) => {
   const instance = createComponentInstance(vnode)
   setupComponent(instance)
-  setupRenderEffect(instance, container)
+  setupRenderEffect(instance, vnode, container)
 }
 
 const processElement = (vnode: VNode, container: HTMLElement) => {
@@ -33,7 +33,7 @@ const processElement = (vnode: VNode, container: HTMLElement) => {
 }
 
 const mountElement = (vnode: VNode, container: HTMLElement) => {
-  const el = document.createElement(vnode.type as string)
+  const el = (vnode.el = document.createElement(vnode.type as string))
   const { children, props } = vnode
 
   if (typeof children === 'string') {

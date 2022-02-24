@@ -1,3 +1,4 @@
+import { publicInstanceProxyHandlers } from './componentPublicInstance'
 import { Component, VNode } from './createVNode'
 import { patch } from './renderer'
 
@@ -6,14 +7,16 @@ export type ComponentInternalInstance = {
   setupState: unknown
   type: Component
   render: () => VNode
+  proxy: any
 }
 
 export const createComponentInstance = (vnode: VNode) => {
   const component: ComponentInternalInstance = {
     vnode,
-    setupState: null,
+    setupState: {},
     type: vnode.type as Component,
     render: () => null as any,
+    proxy: null,
   }
   return component
 }
@@ -27,15 +30,20 @@ export const setupComponent = (instance: ComponentInternalInstance) => {
 
 export const setupRenderEffect = (
   instance: ComponentInternalInstance,
+  vnode: VNode,
   container: HTMLElement
 ) => {
-  const subTree = instance.render()
+  const subTree = instance.render.call(instance.proxy)
 
   patch(subTree, container)
+
+  vnode.el = subTree.el
 }
 
 function setupStatefulComponent(instance: ComponentInternalInstance) {
   const Component = instance.vnode.type as Component
+
+  instance.proxy = new Proxy({ _: instance }, publicInstanceProxyHandlers)
   const { setup } = Component
 
   if (setup) {
