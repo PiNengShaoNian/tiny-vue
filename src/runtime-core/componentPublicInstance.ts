@@ -1,3 +1,4 @@
+import { hasOwn } from '../shared'
 import { ComponentInternalInstance } from './component'
 
 const publicPropertiesMap = {
@@ -6,11 +7,16 @@ const publicPropertiesMap = {
 
 type PublicInstanceInternalProperties = keyof typeof publicPropertiesMap
 
-export const publicInstanceProxyHandlers: ProxyHandler<any> = {
+export const publicInstanceProxyHandlers: ProxyHandler<{
+  _: ComponentInternalInstance
+}> = {
   get({ _: instance }, key) {
     const setupState = instance.setupState as any
-    if (key in setupState) {
+    const props = instance.props
+    if (hasOwn(setupState, key)) {
       return setupState[key]
+    } else if (hasOwn(props, key)) {
+      return props[key]
     }
 
     if (key in publicPropertiesMap) {

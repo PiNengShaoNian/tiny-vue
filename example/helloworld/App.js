@@ -1,4 +1,5 @@
 import { h } from '../../lib/tiny-vue.esm.js'
+import { Foo } from './Foo.js'
 
 export const App = {
   render() {
@@ -18,6 +19,9 @@ export const App = {
         },
         this.msg
       ),
+      h(Foo, {
+        count: 3,
+      }),
     ])
   },
   setup() {

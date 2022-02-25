@@ -1,3 +1,4 @@
+import { isObject } from '../shared'
 import {
   mutableHandlers,
   readonlyHandlers,
@@ -10,17 +11,21 @@ export const enum ReactiveFlags {
 }
 
 export const reactive = <T extends object>(raw: T): T => {
-  return createActiveObject(raw, mutableHandlers as ProxyHandler<T>)
+  return createReactiveObject(raw, mutableHandlers as ProxyHandler<T>)
 }
 
 export const readonly = <T extends object>(raw: T): T => {
-  return createActiveObject(raw, readonlyHandlers as ProxyHandler<T>)
+  return createReactiveObject(raw, readonlyHandlers as ProxyHandler<T>)
 }
 
-export const createActiveObject = <T extends object>(
+export const createReactiveObject = <T extends object>(
   raw: T,
   baseHandlers: ProxyHandler<T>
 ): T => {
+  if (!isObject(raw)) {
+    console.warn(`target ${raw} 必须是一个对象`)
+    return raw
+  }
   return new Proxy(raw, baseHandlers)
 }
 
@@ -33,7 +38,7 @@ export const isReadonly = (obj: any): boolean => {
 }
 
 export const shallowReadonly = <T extends object>(raw: T): T => {
-  return createActiveObject(raw, shallowReadonlyHandlers as ProxyHandler<T>)
+  return createReactiveObject(raw, shallowReadonlyHandlers as ProxyHandler<T>)
 }
 
 export const isProxy = (obj: any) => {

@@ -8,7 +8,7 @@ export type VNode = {
   shapeFlag: ShapeFlag
 }
 
-export type Component = { render(): VNode; setup?: () => unknown }
+export type Component = { render(): VNode; setup?: (props: any) => unknown }
 
 export type ComponentType = Component | string
 
