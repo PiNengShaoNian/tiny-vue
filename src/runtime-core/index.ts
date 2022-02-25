@@ -1,3 +1,4 @@
 export { createApp } from './createApp'
 export { h } from './h'
 export { renderSlot } from './helpers/renderSlots'
+export { createTextVNode } from './vnode'

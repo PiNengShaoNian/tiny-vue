@@ -1,10 +1,11 @@
 import { Slot } from '../component'
-import { createVNode } from '../createVNode'
+import { createVNode } from '../vnode'
+import { Fragment } from '../vnode'
 
 export const renderSlot = (
   slots: Record<string, Slot>,
   key: string,
   props: any = {}
 ) => {
-  return createVNode('div', {}, slots?.[key]?.(props))
+  return createVNode(Fragment, {}, slots?.[key]?.(props))
 }

@@ -3,7 +3,7 @@ import { emit } from './componentEmit'
 import { initProps } from './componentProps'
 import { publicInstanceProxyHandlers } from './componentPublicInstance'
 import { initSlots } from './componentSlots'
-import { Component, VNode } from './createVNode'
+import { Component, VNode } from './vnode'
 import { patch } from './renderer'
 
 export type Slot = (scope?: any) => VNode | VNode[]

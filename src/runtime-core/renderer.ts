@@ -1,21 +1,34 @@
-import { isObject } from '../shared/index'
 import { ShapeFlags } from '../shared/ShapeFlags'
 import {
   createComponentInstance,
   setupComponent,
   setupRenderEffect,
 } from './component'
-import { VNode } from './createVNode'
+import { VNode } from './vnode'
+import { Fragment, Text } from './vnode'
 
 export const render = (vnode: VNode, container: HTMLElement): void => {
   patch(vnode, container)
 }
 
 export const patch = (vnode: VNode, container: HTMLElement) => {
-  if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
-    processElement(vnode, container)
-  } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-    processComponent(vnode, container)
+  const { type } = vnode
+  switch (type) {
+    case Fragment: {
+      processFragment(vnode, container)
+      break
+    }
+    case Text: {
+      processText(vnode, container)
+      break
+    }
+    default: {
+      if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
+        processElement(vnode, container)
+      } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+        processComponent(vnode, container)
+      }
+    }
   }
 }
 
@@ -63,4 +76,12 @@ const mountChildren = (vnode: VNode, container: HTMLElement) => {
   for (const child of vnode.children as VNode[]) {
     patch(child, container)
   }
+}
+function processFragment(vnode: VNode, container: HTMLElement) {
+  mountChildren(vnode, container)
+}
+function processText(vnode: VNode, container: HTMLElement) {
+  const text = vnode.children as string
+  const textNode = (vnode.el = document.createTextNode(text) as any)
+  container.appendChild(textNode)
 }

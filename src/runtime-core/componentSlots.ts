@@ -1,6 +1,6 @@
 import { ShapeFlags } from '../shared/ShapeFlags'
 import { ComponentInternalInstance, Slot } from './component'
-import { VNode } from './createVNode'
+import { VNode } from './vnode'
 
 export const initSlots = (
   instance: ComponentInternalInstance,

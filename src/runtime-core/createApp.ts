@@ -1,4 +1,4 @@
-import { Component, createVNode } from './createVNode'
+import { Component, createVNode } from './vnode'
 import { render } from './renderer'
 
 type App = {
