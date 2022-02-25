@@ -2,8 +2,11 @@ import { shallowReadonly } from '../reactivity/reactive'
 import { emit } from './componentEmit'
 import { initProps } from './componentProps'
 import { publicInstanceProxyHandlers } from './componentPublicInstance'
+import { initSlots } from './componentSlots'
 import { Component, VNode } from './createVNode'
 import { patch } from './renderer'
+
+export type Slot = (scope?: any) => VNode | VNode[]
 
 export type ComponentInternalInstance = {
   vnode: VNode
@@ -13,6 +16,7 @@ export type ComponentInternalInstance = {
   props: any
   proxy: any
   emit: (event: string, ...args: any[]) => void
+  slots: Record<string, Slot>
 }
 
 export const createComponentInstance = (vnode: VNode) => {
@@ -24,6 +28,7 @@ export const createComponentInstance = (vnode: VNode) => {
     proxy: null,
     props: null,
     emit: null as any,
+    slots: {},
   }
   component.emit = emit.bind(null, component)
   return component
@@ -31,7 +36,7 @@ export const createComponentInstance = (vnode: VNode) => {
 
 export const setupComponent = (instance: ComponentInternalInstance) => {
   initProps(instance, instance.vnode.props)
-  // initSlots()
+  initSlots(instance, instance.vnode.children)
 
   setupStatefulComponent(instance)
 }
