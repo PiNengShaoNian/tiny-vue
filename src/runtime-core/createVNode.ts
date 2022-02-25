@@ -8,7 +8,13 @@ export type VNode = {
   shapeFlag: ShapeFlag
 }
 
-export type Component = { render(): VNode; setup?: (props: any) => unknown }
+export type Component = {
+  render(): VNode
+  setup?: (
+    props: any,
+    context: { emit: (event: string, ...args: any[]) => void }
+  ) => unknown
+}
 
 export type ComponentType = Component | string
 

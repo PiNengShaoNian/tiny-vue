@@ -21,6 +21,9 @@ export const App = {
       ),
       h(Foo, {
         count: 3,
+        onClick(v) {
+          console.log(`arguments from Foo`, v)
+        },
       }),
     ])
   },
