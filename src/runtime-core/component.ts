@@ -17,9 +17,14 @@ export type ComponentInternalInstance = {
   proxy: any
   emit: (event: string, ...args: any[]) => void
   slots: Record<string, Slot>
+  provides: Record<string | symbol, any>
+  parent: ComponentInternalInstance | null
 }
 
-export const createComponentInstance = (vnode: VNode) => {
+export const createComponentInstance = (
+  vnode: VNode,
+  parent: ComponentInternalInstance | null
+) => {
   const component: ComponentInternalInstance = {
     vnode,
     setupState: {},
@@ -29,6 +34,8 @@ export const createComponentInstance = (vnode: VNode) => {
     props: null,
     emit: null as any,
     slots: {},
+    provides: Object.create(parent?.provides ?? null),
+    parent,
   }
   component.emit = emit.bind(null, component)
   return component
@@ -48,7 +55,7 @@ export const setupRenderEffect = (
 ) => {
   const subTree = instance.render.call(instance.proxy)
 
-  patch(subTree, container)
+  patch(subTree, container, instance)
 
   vnode.el = subTree.el
 }

@@ -1,5 +1,6 @@
 import { ShapeFlags } from '../shared/ShapeFlags'
 import {
+  ComponentInternalInstance,
   createComponentInstance,
   setupComponent,
   setupRenderEffect,
@@ -8,14 +9,18 @@ import { VNode } from './vnode'
 import { Fragment, Text } from './vnode'
 
 export const render = (vnode: VNode, container: HTMLElement): void => {
-  patch(vnode, container)
+  patch(vnode, container, null)
 }
 
-export const patch = (vnode: VNode, container: HTMLElement) => {
+export const patch = (
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) => {
   const { type } = vnode
   switch (type) {
     case Fragment: {
-      processFragment(vnode, container)
+      processFragment(vnode, container, parentComponent)
       break
     }
     case Text: {
@@ -24,29 +29,45 @@ export const patch = (vnode: VNode, container: HTMLElement) => {
     }
     default: {
       if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
-        processElement(vnode, container)
+        processElement(vnode, container, parentComponent)
       } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-        processComponent(vnode, container)
+        processComponent(vnode, container, parentComponent)
       }
     }
   }
 }
 
-const processComponent = (vnode: VNode, container: HTMLElement) => {
-  mountComponent(vnode, container)
+const processComponent = (
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) => {
+  mountComponent(vnode, container, parentComponent)
 }
 
-const mountComponent = (vnode: VNode, container: HTMLElement) => {
-  const instance = createComponentInstance(vnode)
+const mountComponent = (
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) => {
+  const instance = createComponentInstance(vnode, parentComponent)
   setupComponent(instance)
   setupRenderEffect(instance, vnode, container)
 }
 
-const processElement = (vnode: VNode, container: HTMLElement) => {
-  mountElement(vnode, container)
+const processElement = (
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) => {
+  mountElement(vnode, container, parentComponent)
 }
 
-const mountElement = (vnode: VNode, container: HTMLElement) => {
+const mountElement = (
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) => {
   const el = (vnode.el = document.createElement(vnode.type as string))
   const { children, props } = vnode
 
@@ -54,7 +75,7 @@ const mountElement = (vnode: VNode, container: HTMLElement) => {
   if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
     el.textContent = children as string
   } else if (shapeFlag & ShapeFlags.ARRAY_CHLDREN) {
-    mountChildren(vnode, el)
+    mountChildren(vnode, el, parentComponent)
   }
 
   for (const key in props as object) {
@@ -72,13 +93,21 @@ const mountElement = (vnode: VNode, container: HTMLElement) => {
   container.appendChild(el)
 }
 
-const mountChildren = (vnode: VNode, container: HTMLElement) => {
+const mountChildren = (
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) => {
   for (const child of vnode.children as VNode[]) {
-    patch(child, container)
+    patch(child, container, parentComponent)
   }
 }
-function processFragment(vnode: VNode, container: HTMLElement) {
-  mountChildren(vnode, container)
+function processFragment(
+  vnode: VNode,
+  container: HTMLElement,
+  parentComponent: ComponentInternalInstance | null
+) {
+  mountChildren(vnode, container, parentComponent)
 }
 function processText(vnode: VNode, container: HTMLElement) {
   const text = vnode.children as string

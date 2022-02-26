@@ -1,3 +1,4 @@
+export { inject, provide } from './apiInject'
 export { createApp } from './createApp'
 export { h } from './h'
 export { renderSlot } from './helpers/renderSlots'
