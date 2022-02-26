@@ -82,8 +82,10 @@ export const isTracking = (): boolean => {
 
 export const trigger = (target: any, key: string | symbol) => {
   const depsMap = targetMap.get(target)
-  const dep = depsMap?.get(key)!
-  triggerEffects(dep)
+  const dep = depsMap?.get(key)
+  if (dep) {
+    triggerEffects(dep)
+  }
 }
 
 export const triggerEffects = (dep: Set<ReactiveEffect>) => {

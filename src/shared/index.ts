@@ -10,3 +10,5 @@ export const hasOwn = (
   obj: InstanceType<typeof Object>,
   key: string | symbol
 ) => obj?.hasOwnProperty(key) ?? false
+
+export const EMPTY_OBJ = {}

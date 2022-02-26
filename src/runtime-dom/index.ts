@@ -14,13 +14,17 @@ export const renderer = createRenderer<HTMLElement>({
   createText(text) {
     return document.createTextNode(text) as any
   },
-  patchProp(el, key, val) {
+  patchProp(el, key, prevProp: any, newProp: any) {
     const isOn = (key: string) => /^on[A-Z]/.test(key)
     if (isOn(key)) {
       const event = key.slice(2).toLowerCase()
-      el.addEventListener(event, val)
+      el.addEventListener(event, newProp)
     } else {
-      el.setAttribute(key, val)
+      if (newProp === null || newProp === undefined) {
+        el.removeAttribute(key)
+      } else {
+        el.setAttribute(key, newProp)
+      }
     }
   },
 })

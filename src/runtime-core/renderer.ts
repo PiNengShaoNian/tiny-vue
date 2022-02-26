@@ -1,4 +1,5 @@
 import { effect } from '..'
+import { EMPTY_OBJ } from '../shared'
 import { ShapeFlags } from '../shared/ShapeFlags'
 import {
   ComponentInternalInstance,
@@ -12,7 +13,7 @@ import { Fragment, Text } from './vnode'
 export type RendererOptions<T> = {
   createElement: (type: string) => T
   insert: (el: T, container: T) => void
-  patchProp: (el: T, key: string, val: any) => void
+  patchProp: (el: T, key: string, prevProp: any, newProp: any) => void
   createText: (text: string) => T
   setElementText: (el: T, text: string) => void
 }
@@ -33,8 +34,13 @@ export type RootRenderFunction<HostElement> = (
 export const createRenderer = <HostElement = RendererNode>(
   options: RendererOptions<HostElement>
 ) => {
-  const { createElement, insert, patchProp, createText, setElementText } =
-    options
+  const {
+    createElement: hostCreateElement,
+    insert: hostInsert,
+    patchProp: hostPatchProp,
+    createText: hostCreateText,
+    setElementText: hostSetElementText,
+  } = options
 
   const render = (vnode: VNode, container: HostElement): void => {
     patch(null, vnode, container, null)
@@ -131,7 +137,36 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const patchElement = (n1: VNode, n2: VNode, container: HostElement) => {
-    console.log('n1', n1, 'n2', n2, 'patchELement')
+    const oldProps: any = n1.props || EMPTY_OBJ
+    const newProps: any = n2.props || EMPTY_OBJ
+
+    const el = (n2.el = n1.el)
+    patchProps(el as HostElement, oldProps, newProps)
+  }
+
+  const patchProps = (
+    el: HostElement,
+    oldProps: Record<string, any>,
+    newProps: Record<string, any>
+  ): void => {
+    if (oldProps === newProps) return
+
+    for (const key in newProps) {
+      const prevProp = oldProps[key]
+      const newProp = newProps[key]
+
+      if (prevProp !== newProp) {
+        hostPatchProp(el, key, prevProp, newProp)
+      }
+    }
+
+    if (oldProps === EMPTY_OBJ) return
+
+    for (const key in oldProps) {
+      if (!(key in newProps)) {
+        hostPatchProp(el, key, oldProps[key], null)
+      }
+    }
   }
 
   const mountElement = (
@@ -139,12 +174,12 @@ export const createRenderer = <HostElement = RendererNode>(
     container: HostElement,
     parentComponent: ComponentInternalInstance | null
   ) => {
-    const el = (vnode.el = createElement(vnode.type as string))
+    const el = (vnode.el = hostCreateElement(vnode.type as string))
     const { children, props } = vnode
 
     const { shapeFlag } = vnode
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-      setElementText(el, children as string)
+      hostSetElementText(el, children as string)
     } else if (shapeFlag & ShapeFlags.ARRAY_CHLDREN) {
       mountChildren(vnode, el, parentComponent)
     }
@@ -152,10 +187,10 @@ export const createRenderer = <HostElement = RendererNode>(
     for (const key in props as object) {
       const val = (props as any)[key]
 
-      patchProp(el, key, val)
+      hostPatchProp(el, key, null, val)
     }
 
-    insert(el, container)
+    hostInsert(el, container)
   }
 
   const mountChildren = (
@@ -177,8 +212,8 @@ export const createRenderer = <HostElement = RendererNode>(
   }
   function processText(n1: VNode | null, n2: VNode, container: HostElement) {
     const text = n2.children as string
-    const textNode = (n2.el = createText(text) as any)
-    insert(textNode, container)
+    const textNode = (n2.el = hostCreateText(text) as any)
+    hostInsert(textNode, container)
   }
 
   return {
