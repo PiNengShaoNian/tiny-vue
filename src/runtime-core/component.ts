@@ -1,3 +1,4 @@
+import { proxyRefs } from '..'
 import { shallowReadonly } from '../reactivity/reactive'
 import { emit } from './componentEmit'
 import { initProps } from './componentProps'
@@ -18,6 +19,8 @@ export type ComponentInternalInstance = {
   slots: Record<string, Slot>
   provides: Record<string | symbol, any>
   parent: ComponentInternalInstance | null
+  isMounted: boolean
+  subTree: VNode | null
 }
 
 export const createComponentInstance = (
@@ -35,6 +38,8 @@ export const createComponentInstance = (
     slots: {},
     provides: Object.create(parent?.provides ?? null),
     parent,
+    isMounted: false,
+    subTree: null,
   }
   component.emit = emit.bind(null, component)
   return component
@@ -69,7 +74,7 @@ const handleSetupResult = (
   setupResult: any
 ) => {
   if (typeof setupResult === 'object') {
-    instance.setupState = setupResult
+    instance.setupState = proxyRefs(setupResult)
   }
 
   finishComponentSetup(instance)

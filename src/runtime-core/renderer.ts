@@ -1,3 +1,4 @@
+import { effect } from '..'
 import { ShapeFlags } from '../shared/ShapeFlags'
 import {
   ComponentInternalInstance,
@@ -36,52 +37,74 @@ export const createRenderer = <HostElement = RendererNode>(
     options
 
   const render = (vnode: VNode, container: HostElement): void => {
-    patch(vnode, container, null)
+    patch(null, vnode, container, null)
   }
 
+  /**
+   *
+   * @param n1 老节点
+   * @param n2 新节点
+   * @param container
+   * @param parentComponent
+   */
   const patch = (
-    vnode: VNode,
+    n1: VNode | null,
+    n2: VNode,
     container: HostElement,
     parentComponent: ComponentInternalInstance | null
   ) => {
-    const { type } = vnode
+    const { type } = n2
     switch (type) {
       case Fragment: {
-        processFragment(vnode, container, parentComponent)
+        processFragment(n1, n2, container, parentComponent)
         break
       }
       case Text: {
-        processText(vnode, container)
+        processText(n1, n2, container)
         break
       }
       default: {
-        if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
-          processElement(vnode, container, parentComponent)
-        } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-          processComponent(vnode, container, parentComponent)
+        if (n2.shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(n1, n2, container, parentComponent)
+        } else if (n2.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+          processComponent(n1, n2, container, parentComponent)
         }
       }
     }
   }
 
-  const setupRenderEffect = <T>(
+  const setupRenderEffect = (
     instance: ComponentInternalInstance,
     vnode: VNode,
     container: HostElement
   ) => {
-    const subTree = instance.render.call(instance.proxy)
+    effect(() => {
+      if (!instance.isMounted) {
+        const subTree = (instance.subTree = instance.render.call(
+          instance.proxy
+        ))
 
-    patch(subTree, container, instance)
+        patch(null, subTree, container, instance)
 
-    vnode.el = subTree.el
+        vnode.el = subTree.el
+        instance.isMounted = true
+      } else {
+        const prevSubTree = instance.subTree
+        const subTree = instance.render.call(instance.proxy)
+        instance.subTree = subTree
+
+        patch(prevSubTree, subTree, container, instance)
+      }
+    })
   }
 
   const processComponent = (
-    vnode: VNode,
+    n1: VNode | null,
+    n2: VNode,
     container: HostElement,
     parentComponent: ComponentInternalInstance | null
   ) => {
-    mountComponent(vnode, container, parentComponent)
+    mountComponent(n2, container, parentComponent)
   }
 
   const mountComponent = (
@@ -95,11 +118,20 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const processElement = (
-    vnode: VNode,
+    n1: VNode | null,
+    n2: VNode,
     container: HostElement,
     parentComponent: ComponentInternalInstance | null
   ) => {
-    mountElement(vnode, container, parentComponent)
+    if (!n1) {
+      mountElement(n2, container, parentComponent)
+    } else {
+      patchElement(n1, n2, container)
+    }
+  }
+
+  const patchElement = (n1: VNode, n2: VNode, container: HostElement) => {
+    console.log('n1', n1, 'n2', n2, 'patchELement')
   }
 
   const mountElement = (
@@ -132,19 +164,20 @@ export const createRenderer = <HostElement = RendererNode>(
     parentComponent: ComponentInternalInstance | null
   ) => {
     for (const child of vnode.children as VNode[]) {
-      patch(child, container, parentComponent)
+      patch(null, child, container, parentComponent)
     }
   }
   function processFragment(
-    vnode: VNode,
+    n1: VNode | null,
+    n2: VNode,
     container: HostElement,
     parentComponent: ComponentInternalInstance | null
   ) {
-    mountChildren(vnode, container, parentComponent)
+    mountChildren(n2, container, parentComponent)
   }
-  function processText(vnode: VNode, container: HostElement) {
-    const text = vnode.children as string
-    const textNode = (vnode.el = createText(text) as any)
+  function processText(n1: VNode | null, n2: VNode, container: HostElement) {
+    const text = n2.children as string
+    const textNode = (n2.el = createText(text) as any)
     insert(textNode, container)
   }
 
