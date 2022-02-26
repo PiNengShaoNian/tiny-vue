@@ -1,14 +1,15 @@
 import { ShapeFlag, ShapeFlags } from '../shared/ShapeFlags'
+import { RendererNode } from './renderer'
 
 export const Fragment = Symbol()
 
 export const Text = Symbol()
 
-export type VNode = {
+export type VNode<HostElement = RendererNode> = {
   type: ComponentType
   props: unknown
   children: undefined | string | VNode[]
-  el: HTMLElement | null
+  el: HostElement | null
   shapeFlag: ShapeFlag
 }
 
@@ -22,12 +23,12 @@ export type Component = {
 
 export type ComponentType = Component | string | symbol
 
-export const createVNode = (
+export const createVNode = <HostElement = RendererNode>(
   type: ComponentType,
   props?: any,
   children?: any
-) => {
-  const vnode: VNode = {
+): VNode<HostElement> => {
+  const vnode: VNode<HostElement> = {
     type,
     props,
     children,

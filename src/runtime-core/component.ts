@@ -4,7 +4,6 @@ import { initProps } from './componentProps'
 import { publicInstanceProxyHandlers } from './componentPublicInstance'
 import { initSlots } from './componentSlots'
 import { Component, VNode } from './vnode'
-import { patch } from './renderer'
 
 export type Slot = (scope?: any) => VNode | VNode[]
 
@@ -46,18 +45,6 @@ export const setupComponent = (instance: ComponentInternalInstance) => {
   initSlots(instance, instance.vnode.children)
 
   setupStatefulComponent(instance)
-}
-
-export const setupRenderEffect = (
-  instance: ComponentInternalInstance,
-  vnode: VNode,
-  container: HTMLElement
-) => {
-  const subTree = instance.render.call(instance.proxy)
-
-  patch(subTree, container, instance)
-
-  vnode.el = subTree.el
 }
 
 function setupStatefulComponent(instance: ComponentInternalInstance) {

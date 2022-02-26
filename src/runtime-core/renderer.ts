@@ -3,114 +3,152 @@ import {
   ComponentInternalInstance,
   createComponentInstance,
   setupComponent,
-  setupRenderEffect,
 } from './component'
+import { createAppAPI } from './createApp'
 import { VNode } from './vnode'
 import { Fragment, Text } from './vnode'
 
-export const render = (vnode: VNode, container: HTMLElement): void => {
-  patch(vnode, container, null)
+export type RendererOptions<T> = {
+  createElement: (type: string) => T
+  insert: (el: T, container: T) => void
+  patchProp: (el: T, key: string, val: any) => void
+  createText: (text: string) => T
+  setElementText: (el: T, text: string) => void
 }
 
-export const patch = (
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
+// Renderer Node can technically be any object in the context of core renderer
+// logic - they are never directly operated on and always passed to the node op
+// functions provided via options, so the internal constraint is really just
+// a generic object.
+export interface RendererNode {
+  [key: string]: any
+}
+
+export type RootRenderFunction<HostElement> = (
+  vnode: VNode<HostElement>,
+  container: HostElement
+) => void
+
+export const createRenderer = <HostElement = RendererNode>(
+  options: RendererOptions<HostElement>
 ) => {
-  const { type } = vnode
-  switch (type) {
-    case Fragment: {
-      processFragment(vnode, container, parentComponent)
-      break
-    }
-    case Text: {
-      processText(vnode, container)
-      break
-    }
-    default: {
-      if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
-        processElement(vnode, container, parentComponent)
-      } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-        processComponent(vnode, container, parentComponent)
+  const { createElement, insert, patchProp, createText, setElementText } =
+    options
+
+  const render = (vnode: VNode, container: HostElement): void => {
+    patch(vnode, container, null)
+  }
+
+  const patch = (
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) => {
+    const { type } = vnode
+    switch (type) {
+      case Fragment: {
+        processFragment(vnode, container, parentComponent)
+        break
+      }
+      case Text: {
+        processText(vnode, container)
+        break
+      }
+      default: {
+        if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(vnode, container, parentComponent)
+        } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+          processComponent(vnode, container, parentComponent)
+        }
       }
     }
   }
-}
 
-const processComponent = (
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
-) => {
-  mountComponent(vnode, container, parentComponent)
-}
+  const setupRenderEffect = <T>(
+    instance: ComponentInternalInstance,
+    vnode: VNode,
+    container: HostElement
+  ) => {
+    const subTree = instance.render.call(instance.proxy)
 
-const mountComponent = (
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
-) => {
-  const instance = createComponentInstance(vnode, parentComponent)
-  setupComponent(instance)
-  setupRenderEffect(instance, vnode, container)
-}
+    patch(subTree, container, instance)
 
-const processElement = (
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
-) => {
-  mountElement(vnode, container, parentComponent)
-}
-
-const mountElement = (
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
-) => {
-  const el = (vnode.el = document.createElement(vnode.type as string))
-  const { children, props } = vnode
-
-  const { shapeFlag } = vnode
-  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-    el.textContent = children as string
-  } else if (shapeFlag & ShapeFlags.ARRAY_CHLDREN) {
-    mountChildren(vnode, el, parentComponent)
+    vnode.el = subTree.el
   }
 
-  for (const key in props as object) {
-    const val = (props as any)[key]
-    const isOn = (key: string) => /^on[A-Z]/.test(key)
+  const processComponent = (
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) => {
+    mountComponent(vnode, container, parentComponent)
+  }
 
-    if (isOn(key)) {
-      const event = key.slice(2).toLowerCase()
-      el.addEventListener(event, (props as any)[key])
-    } else {
-      el.setAttribute(key, val)
+  const mountComponent = (
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) => {
+    const instance = createComponentInstance(vnode, parentComponent)
+    setupComponent(instance)
+    setupRenderEffect(instance, vnode, container)
+  }
+
+  const processElement = (
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) => {
+    mountElement(vnode, container, parentComponent)
+  }
+
+  const mountElement = (
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) => {
+    const el = (vnode.el = createElement(vnode.type as string))
+    const { children, props } = vnode
+
+    const { shapeFlag } = vnode
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      setElementText(el, children as string)
+    } else if (shapeFlag & ShapeFlags.ARRAY_CHLDREN) {
+      mountChildren(vnode, el, parentComponent)
+    }
+
+    for (const key in props as object) {
+      const val = (props as any)[key]
+
+      patchProp(el, key, val)
+    }
+
+    insert(el, container)
+  }
+
+  const mountChildren = (
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) => {
+    for (const child of vnode.children as VNode[]) {
+      patch(child, container, parentComponent)
     }
   }
-
-  container.appendChild(el)
-}
-
-const mountChildren = (
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
-) => {
-  for (const child of vnode.children as VNode[]) {
-    patch(child, container, parentComponent)
+  function processFragment(
+    vnode: VNode,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance | null
+  ) {
+    mountChildren(vnode, container, parentComponent)
   }
-}
-function processFragment(
-  vnode: VNode,
-  container: HTMLElement,
-  parentComponent: ComponentInternalInstance | null
-) {
-  mountChildren(vnode, container, parentComponent)
-}
-function processText(vnode: VNode, container: HTMLElement) {
-  const text = vnode.children as string
-  const textNode = (vnode.el = document.createTextNode(text) as any)
-  container.appendChild(textNode)
+  function processText(vnode: VNode, container: HostElement) {
+    const text = vnode.children as string
+    const textNode = (vnode.el = createText(text) as any)
+    insert(textNode, container)
+  }
+
+  return {
+    createApp: createAppAPI(render),
+  }
 }

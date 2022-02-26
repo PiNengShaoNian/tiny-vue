@@ -1,15 +1,20 @@
+import { RendererNode, RootRenderFunction } from './renderer'
 import { Component, createVNode } from './vnode'
-import { render } from './renderer'
 
-type App = {
-  mount(rootContainer: HTMLElement): void
+type App<HostElement = RendererNode> = {
+  mount(rootContainer: HostElement): void
 }
 
-export const createApp = (rootComponent: Component): App => {
-  return {
-    mount(rootContainer) {
-      const vnode = createVNode(rootComponent)
-      render(vnode, rootContainer)
-    },
+export const createAppAPI = <HostElement = RendererNode>(
+  render: RootRenderFunction<HostElement>
+) => {
+  const createApp = (rootComponent: Component): App<HostElement> => {
+    return {
+      mount(rootContainer: HostElement) {
+        const vnode = createVNode<HostElement>(rootComponent)
+        render(vnode, rootContainer)
+      },
+    }
   }
+  return createApp
 }
