@@ -260,6 +260,12 @@ export const createRenderer = <HostElement = RendererNode>(
       const toBePatched = e2 - s2 + 1
       let patched = 0
       const keyToNewIndex = new Map<string | number, number>()
+      const newIndexToOldIndex: number[] = Array.from<number>({
+        length: toBePatched,
+      }).fill(0)
+      let moved = false
+      let maxNewIndexSoFar = 0
+
       for (let i = s2; i <= e2; ++i) {
         const key = c2[i].key
         if (key !== null) {
@@ -287,8 +293,36 @@ export const createRenderer = <HostElement = RendererNode>(
         if (newIndex === undefined) {
           hostRemove(prevChild.el!)
         } else {
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex
+          } else {
+            moved = true
+          }
+          newIndexToOldIndex[newIndex - s2] = i + 1
           ++patched
           patch(prevChild, c2[newIndex], container, parentComponent, null)
+        }
+      }
+
+      const increasingNewIndexSequence = moved ? getLIS(newIndexToOldIndex) : []
+      let j = increasingNewIndexSequence.length - 1
+
+      for (let i = toBePatched - 1; i >= 0; --i) {
+        const newIndex = i + s2
+        const nextChild = c2[newIndex]
+        const anchor = newIndex + 1 < l2 ? c2[newIndex + 1].el! : null
+
+        if (newIndexToOldIndex[i] === 0) {
+          patch(null, nextChild, container, parentComponent, anchor)
+        } else if (moved) {
+          if (
+            j <= 0 ||
+            newIndexToOldIndex[i] !== increasingNewIndexSequence[j]
+          ) {
+            hostInsert(nextChild.el!, container, anchor)
+          } else {
+            --j
+          }
         }
       }
     }
@@ -405,4 +439,37 @@ export const createRenderer = <HostElement = RendererNode>(
   return {
     createApp: createAppAPI(render),
   }
+}
+
+const getLIS = (nums: number[]): number[] => {
+  //通过二分查找插入位置动态构建出来的最长递增子序列
+  //tails[i]表示长度为i的最长递增子序列，该序列最后的一个数字的最小值为tails[i]
+  const tails: number[] = []
+  let len = 1
+  tails[1] = nums[0]
+
+  for (let i = 1; i < nums.length; ++i) {
+    if (nums[i] > tails[len]) {
+      tails[++len] = nums[i]
+    } else {
+      //左边从1开始tails[0]为未定义行为
+      let l = 1
+      let r = len
+      let pos = 0
+
+      while (l <= r) {
+        const mid = (l + r) >> 1
+        if (tails[mid] < nums[i]) {
+          pos = mid
+          l = mid + 1
+        } else {
+          r = mid - 1
+        }
+      }
+
+      tails[pos + 1] = nums[i]
+    }
+  }
+
+  return tails
 }

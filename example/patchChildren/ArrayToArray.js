@@ -92,11 +92,59 @@ import { h, ref } from '../../lib/tiny-vue.esm.js'
 // 7. 对比中间部分
 // a b (c d) f g
 // a b (e c) f g
+// const prevChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+//   h('p', { key: 'C', id: 'c-prev' }, 'C'),
+//   h('p', { key: 'D' }, 'D'),
+//   h('p', { key: 'F' }, 'F'),
+//   h('p', { key: 'G' }, 'G'),
+// ]
+
+// const nextChildren = [
+//     h('p', { key: 'A' }, 'A'),
+//     h('p', { key: 'B' }, 'B'),
+//     h('p', { key: 'E' }, 'E'),
+//     h('p', { key: 'C', id: 'c-next' }, 'C'),
+//     h('p', { key: 'F' }, 'F'),
+//     h('p', { key: 'G' }, 'G'),
+// ]
+
+// 7. 对比中间部分,位置交换
+// a b (c d e f) g h
+// a b (f c e d) g h
+// const prevChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+//   h('p', { key: 'C', id: 'c-prev' }, 'C'),
+//   h('p', { key: 'D' }, 'D'),
+//   h('p', { key: 'E' }, 'E'),
+//   h('p', { key: 'F' }, 'F'),
+//   h('p', { key: 'G' }, 'G'),
+//   h('p', { key: 'H' }, 'H'),
+// ]
+
+// const nextChildren = [
+//     h('p', { key: 'A' }, 'A'),
+//     h('p', { key: 'B' }, 'B'),
+//     h('p', { key: 'F' }, 'F'),
+//     h('p', { key: 'C', id: 'c-next' }, 'C'),
+//     h('p', { key: 'E' }, 'E'),
+//     h('p', { key: 'D' }, 'D'),
+//     h('p', { key: 'G' }, 'G'),
+//     h('p', { key: 'H' }, 'H'),
+// ]
+
+// 8. 综合例子
+// a b (c d e z) f g
+// a b (d c y e) f g
 const prevChildren = [
   h('p', { key: 'A' }, 'A'),
   h('p', { key: 'B' }, 'B'),
   h('p', { key: 'C', id: 'c-prev' }, 'C'),
   h('p', { key: 'D' }, 'D'),
+  h('p', { key: 'E' }, 'E'),
+  h('p', { key: 'Z' }, 'Z'),
   h('p', { key: 'F' }, 'F'),
   h('p', { key: 'G' }, 'G'),
 ]
@@ -104,8 +152,10 @@ const prevChildren = [
 const nextChildren = [
     h('p', { key: 'A' }, 'A'),
     h('p', { key: 'B' }, 'B'),
-    h('p', { key: 'E' }, 'E'),
+    h('p', { key: 'D' }, 'D'),
     h('p', { key: 'C', id: 'c-next' }, 'C'),
+    h('p', { key: 'Y' }, 'Y'),
+    h('p', { key: 'E' }, 'E'),
     h('p', { key: 'F' }, 'F'),
     h('p', { key: 'G' }, 'G'),
 ]
