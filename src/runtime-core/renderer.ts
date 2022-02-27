@@ -16,6 +16,7 @@ export type RendererOptions<T> = {
   patchProp: (el: T, key: string, prevProp: any, newProp: any) => void
   createText: (text: string) => T
   setElementText: (el: T, text: string) => void
+  remove: (el: T) => void
 }
 
 // Renderer Node can technically be any object in the context of core renderer
@@ -40,9 +41,10 @@ export const createRenderer = <HostElement = RendererNode>(
     patchProp: hostPatchProp,
     createText: hostCreateText,
     setElementText: hostSetElementText,
+    remove: hostRemove,
   } = options
 
-  const render = (vnode: VNode, container: HostElement): void => {
+  const render = (vnode: VNode<HostElement>, container: HostElement): void => {
     patch(null, vnode, container, null)
   }
 
@@ -54,10 +56,10 @@ export const createRenderer = <HostElement = RendererNode>(
    * @param parentComponent
    */
   const patch = (
-    n1: VNode | null,
-    n2: VNode,
+    n1: VNode<HostElement> | null,
+    n2: VNode<HostElement>,
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
     const { type } = n2
     switch (type) {
@@ -80,8 +82,8 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const setupRenderEffect = (
-    instance: ComponentInternalInstance,
-    vnode: VNode,
+    instance: ComponentInternalInstance<HostElement>,
+    vnode: VNode<HostElement>,
     container: HostElement
   ) => {
     effect(() => {
@@ -105,18 +107,18 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const processComponent = (
-    n1: VNode | null,
-    n2: VNode,
+    n1: VNode<HostElement> | null,
+    n2: VNode<HostElement>,
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
     mountComponent(n2, container, parentComponent)
   }
 
   const mountComponent = (
-    vnode: VNode,
+    vnode: VNode<HostElement>,
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
     const instance = createComponentInstance(vnode, parentComponent)
     setupComponent(instance)
@@ -124,23 +126,70 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const processElement = (
-    n1: VNode | null,
-    n2: VNode,
+    n1: VNode<HostElement> | null,
+    n2: VNode<HostElement>,
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
     if (!n1) {
       mountElement(n2, container, parentComponent)
     } else {
-      patchElement(n1, n2, container)
+      patchElement(n1, n2, container, parentComponent)
     }
   }
 
-  const patchElement = (n1: VNode, n2: VNode, container: HostElement) => {
+  const unmountChildren = (children: VNode<HostElement>[]) => {
+    const n = children.length
+
+    for (let i = 0; i < n; ++i) {
+      const el = children[i].el
+      if (el) hostRemove(el)
+    }
+  }
+
+  const patchChildren = (
+    n1: VNode<HostElement>,
+    n2: VNode<HostElement>,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance<HostElement> | null
+  ) => {
+    const prevShapeFlag = n1.shapeFlag
+    const shapeFlag = n2.shapeFlag
+    const c1 = n1.children
+    const c2 = n2.children
+
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      //这个分支处理以下两种请款
+      //(1). 之前是数组，现在是文字
+      //(2). 之前是文字，现在还是文字
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHLDREN) {
+        unmountChildren(n1.children as [])
+      }
+      if (c1 !== c2) {
+        hostSetElementText(container, c2 as string)
+      }
+    } else {
+      if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        hostSetElementText(container, '')
+        mountChildren(
+          n2.children as VNode<HostElement>[],
+          container,
+          parentComponent
+        )
+      }
+    }
+  }
+  const patchElement = (
+    n1: VNode<HostElement>,
+    n2: VNode<HostElement>,
+    container: HostElement,
+    parentComponent: ComponentInternalInstance<HostElement> | null
+  ) => {
     const oldProps: any = n1.props || EMPTY_OBJ
     const newProps: any = n2.props || EMPTY_OBJ
 
-    const el = (n2.el = n1.el)
+    const el = (n2.el = n1.el)!
+    patchChildren(n1, n2, el, parentComponent)
     patchProps(el as HostElement, oldProps, newProps)
   }
 
@@ -170,9 +219,9 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const mountElement = (
-    vnode: VNode,
+    vnode: VNode<HostElement>,
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
     const el = (vnode.el = hostCreateElement(vnode.type as string))
     const { children, props } = vnode
@@ -181,7 +230,7 @@ export const createRenderer = <HostElement = RendererNode>(
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
       hostSetElementText(el, children as string)
     } else if (shapeFlag & ShapeFlags.ARRAY_CHLDREN) {
-      mountChildren(vnode, el, parentComponent)
+      mountChildren(vnode.children as VNode<HostElement>[], el, parentComponent)
     }
 
     for (const key in props as object) {
@@ -194,23 +243,31 @@ export const createRenderer = <HostElement = RendererNode>(
   }
 
   const mountChildren = (
-    vnode: VNode,
+    children: VNode<HostElement>[],
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
-    for (const child of vnode.children as VNode[]) {
+    for (const child of children) {
       patch(null, child, container, parentComponent)
     }
   }
   function processFragment(
-    n1: VNode | null,
-    n2: VNode,
+    n1: VNode<HostElement> | null,
+    n2: VNode<HostElement>,
     container: HostElement,
-    parentComponent: ComponentInternalInstance | null
+    parentComponent: ComponentInternalInstance<HostElement> | null
   ) {
-    mountChildren(n2, container, parentComponent)
+    mountChildren(
+      n2.children as VNode<HostElement>[],
+      container,
+      parentComponent
+    )
   }
-  function processText(n1: VNode | null, n2: VNode, container: HostElement) {
+  function processText(
+    n1: VNode<HostElement> | null,
+    n2: VNode<HostElement>,
+    container: HostElement
+  ) {
     const text = n2.children as string
     const textNode = (n2.el = hostCreateText(text) as any)
     hostInsert(textNode, container)

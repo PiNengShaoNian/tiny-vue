@@ -27,6 +27,9 @@ export const renderer = createRenderer<HTMLElement>({
       }
     }
   },
+  remove(el) {
+    el.remove()
+  },
 })
 
 export const createApp = (rootComponent: Component) => {

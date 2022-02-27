@@ -4,30 +4,31 @@ import { emit } from './componentEmit'
 import { initProps } from './componentProps'
 import { publicInstanceProxyHandlers } from './componentPublicInstance'
 import { initSlots } from './componentSlots'
+import { RendererNode } from './renderer'
 import { Component, VNode } from './vnode'
 
 export type Slot = (scope?: any) => VNode | VNode[]
 
-export type ComponentInternalInstance = {
+export type ComponentInternalInstance<HostElement = RendererNode> = {
   vnode: VNode
   setupState: unknown
   type: Component
-  render: () => VNode
+  render: () => VNode<HostElement>
   props: any
   proxy: any
   emit: (event: string, ...args: any[]) => void
   slots: Record<string, Slot>
   provides: Record<string | symbol, any>
-  parent: ComponentInternalInstance | null
+  parent: ComponentInternalInstance<HostElement> | null
   isMounted: boolean
-  subTree: VNode | null
+  subTree: VNode<HostElement> | null
 }
 
-export const createComponentInstance = (
-  vnode: VNode,
-  parent: ComponentInternalInstance | null
+export const createComponentInstance = <HostElement extends RendererNode>(
+  vnode: VNode<HostElement>,
+  parent: ComponentInternalInstance<HostElement> | null
 ) => {
-  const component: ComponentInternalInstance = {
+  const component: ComponentInternalInstance<HostElement> = {
     vnode,
     setupState: {},
     type: vnode.type as Component,
