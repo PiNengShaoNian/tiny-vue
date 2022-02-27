@@ -49,17 +49,17 @@ import { h, ref } from '../../lib/tiny-vue.esm.js'
 // 4. 新的比老的长，多出来的节点在左边
 //   (a b)
 // c (a b)
-const prevChildren = [
-  h('p', { key: 'A' }, 'A'),
-  h('p', { key: 'B' }, 'B'),
-]
+// const prevChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+// ]
 
-const nextChildren = [
-    h('p', { key: 'D' }, 'D'),
-    h('p', { key: 'C' }, 'C'),
-  h('p', { key: 'A' }, 'A'),
-  h('p', { key: 'B' }, 'B'),
-]
+// const nextChildren = [
+//     h('p', { key: 'D' }, 'D'),
+//     h('p', { key: 'C' }, 'C'),
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+// ]
 
 // 5. 新的比老的短，相同的节点在左边
 // (a b) c
@@ -88,6 +88,27 @@ const nextChildren = [
 //     h('p', { key: 'B' }, 'B'),
 //     h('p', { key: 'C' }, 'C'),
 // ]
+
+// 7. 对比中间部分
+// a b (c d) f g
+// a b (e c) f g
+const prevChildren = [
+  h('p', { key: 'A' }, 'A'),
+  h('p', { key: 'B' }, 'B'),
+  h('p', { key: 'C', id: 'c-prev' }, 'C'),
+  h('p', { key: 'D' }, 'D'),
+  h('p', { key: 'F' }, 'F'),
+  h('p', { key: 'G' }, 'G'),
+]
+
+const nextChildren = [
+    h('p', { key: 'A' }, 'A'),
+    h('p', { key: 'B' }, 'B'),
+    h('p', { key: 'E' }, 'E'),
+    h('p', { key: 'C', id: 'c-next' }, 'C'),
+    h('p', { key: 'F' }, 'F'),
+    h('p', { key: 'G' }, 'G'),
+]
 
 export const ArrayToArray = {
   setup() {

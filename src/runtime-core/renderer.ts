@@ -254,6 +254,43 @@ export const createRenderer = <HostElement = RendererNode>(
       for (; i <= e1; ++i) {
         hostRemove(c1[i].el!)
       }
+    } else {
+      let s1 = i
+      let s2 = i
+      const toBePatched = e2 - s2 + 1
+      let patched = 0
+      const keyToNewIndex = new Map<string | number, number>()
+      for (let i = s2; i <= e2; ++i) {
+        const key = c2[i].key
+        if (key !== null) {
+          keyToNewIndex.set(key, i)
+        }
+      }
+
+      for (let i = s1; i <= e1; ++i) {
+        const prevChild = c1[i]
+        if (patched >= toBePatched) {
+          hostRemove(prevChild.el!)
+          continue
+        }
+        let newIndex: number | undefined
+        if (prevChild.key !== null) {
+          newIndex = keyToNewIndex.get(prevChild.key)
+        } else {
+          for (let j = s2; j <= e2; ++j) {
+            if (isSameVNodeType(prevChild, c2[j])) {
+              newIndex = j
+            }
+          }
+        }
+
+        if (newIndex === undefined) {
+          hostRemove(prevChild.el!)
+        } else {
+          ++patched
+          patch(prevChild, c2[newIndex], container, parentComponent, null)
+        }
+      }
     }
   }
 
