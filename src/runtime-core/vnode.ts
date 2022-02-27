@@ -11,6 +11,7 @@ export type VNode<HostElement = RendererNode> = {
   children: undefined | string | VNode[]
   el: HostElement | null
   shapeFlag: ShapeFlag
+  key: string | number | null
 }
 
 export type Component = {
@@ -33,6 +34,7 @@ export const createVNode = <HostElement = RendererNode>(
     props,
     children,
     el: null,
+    key: props?.key ?? null,
     shapeFlag: getShapeFlag(type),
   }
 

@@ -8,8 +8,8 @@ export const renderer = createRenderer<HTMLElement>({
   setElementText(el, text) {
     el.textContent = text
   },
-  insert(el, container) {
-    container.appendChild(el)
+  insert(el, container, anchor) {
+    container.insertBefore(el, anchor)
   },
   createText(text) {
     return document.createTextNode(text) as any
