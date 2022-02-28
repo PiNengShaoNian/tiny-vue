@@ -1,47 +1,35 @@
-import { h, ref } from '../../lib/tiny-vue.esm.js'
-import { Child } from './Child.js'
+import { h } from '../../lib/tiny-vue.esm.js'
+import { Foo } from './Foo.js'
 
 export const App = {
-  setup() {
-    const msg = ref('123')
-
-    const count = ref(1)
-
-    const changeMsg = () => {
-      msg.value = Math.random()
-    }
-
-    const changeCount = () => {
-      count.value++
-    }
-
-    return {
-      changeMsg,
-      msg,
-      count,
-      changeCount,
-    }
-  },
   render() {
+    window.appInstance = this
     return h('div', { id: 'root', class: ['red', 'black'] }, [
+      h('p', { class: 'red' }, 'hi, '),
       h(
-        'button',
+        'p',
         {
-          onClick: this.changeMsg,
+          class: 'blue',
+          onClick() {
+            console.log(this)
+          },
+          onMousedown() {
+            console.log('mousedown')
+          },
         },
-        '改变msg'
+        this.msg
       ),
-      h(Child, {
-        msg: this.msg,
+      h(Foo, {
+        count: 3,
+        onClick(v) {
+          console.log(`arguments from Foo`, v)
+        },
       }),
-      h(
-        'button',
-        {
-          onClick: this.changeCount,
-        },
-        '改变count'
-      ),
-      h('p', {}, 'count: ' + this.count),
     ])
+  },
+  setup() {
+    return {
+      msg: 'tiny-vue!!!',
+    }
   },
 }

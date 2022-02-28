@@ -8,6 +8,7 @@ import {
 } from './component'
 import { shouldUpdateComponent } from './componentUpdateUtils'
 import { createAppAPI } from './createApp'
+import { queueJobs } from './scheduler'
 import { VNode } from './vnode'
 import { Fragment, Text } from './vnode'
 
@@ -92,33 +93,40 @@ export const createRenderer = <HostElement = RendererNode>(
     vnode: VNode<HostElement>,
     container: HostElement
   ) => {
-    instance.update = effect(() => {
-      if (!instance.isMounted) {
-        const subTree = (instance.subTree = instance.render.call(
-          instance.proxy
-        ))
+    instance.update = effect(
+      () => {
+        if (!instance.isMounted) {
+          const subTree = (instance.subTree = instance.render.call(
+            instance.proxy
+          ))
 
-        patch(null, subTree, container, instance, null)
+          patch(null, subTree, container, instance, null)
 
-        vnode.el = subTree.el
-        instance.isMounted = true
-      } else {
-        //更新组件本身
-        const { next, vnode } = instance
-        if (next) {
-          next.el = vnode.el
+          vnode.el = subTree.el
+          instance.isMounted = true
+        } else {
+          //更新组件本身
+          const { next, vnode } = instance
+          if (next) {
+            next.el = vnode.el
 
-          updateComponentPreRender(instance, next)
+            updateComponentPreRender(instance, next)
+          }
+
+          //更新他的子树
+          const prevSubTree = instance.subTree
+          const subTree = instance.render.call(instance.proxy)
+          instance.subTree = subTree
+
+          patch(prevSubTree, subTree, container, instance, null)
         }
-
-        //更新他的子树
-        const prevSubTree = instance.subTree
-        const subTree = instance.render.call(instance.proxy)
-        instance.subTree = subTree
-
-        patch(prevSubTree, subTree, container, instance, null)
+      },
+      {
+        scheduler() {
+          queueJobs(instance.update)
+        },
       }
-    })
+    )
   }
 
   const processComponent = (
