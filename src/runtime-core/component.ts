@@ -10,7 +10,8 @@ import { Component, VNode } from './vnode'
 export type Slot = (scope?: any) => VNode | VNode[]
 
 export type ComponentInternalInstance<HostElement = RendererNode> = {
-  vnode: VNode
+  vnode: VNode<HostElement>
+  next: VNode<HostElement> | null
   setupState: unknown
   type: Component
   render: () => VNode<HostElement>
@@ -22,6 +23,7 @@ export type ComponentInternalInstance<HostElement = RendererNode> = {
   parent: ComponentInternalInstance<HostElement> | null
   isMounted: boolean
   subTree: VNode<HostElement> | null
+  update: Function
 }
 
 export const createComponentInstance = <HostElement extends RendererNode>(
@@ -30,6 +32,7 @@ export const createComponentInstance = <HostElement extends RendererNode>(
 ) => {
   const component: ComponentInternalInstance<HostElement> = {
     vnode,
+    next: null,
     setupState: {},
     type: vnode.type as Component,
     render: () => null as any,
@@ -41,6 +44,7 @@ export const createComponentInstance = <HostElement extends RendererNode>(
     parent,
     isMounted: false,
     subTree: null,
+    update: () => null,
   }
   component.emit = emit.bind(null, component)
   return component

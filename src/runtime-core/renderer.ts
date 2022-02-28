@@ -6,6 +6,7 @@ import {
   createComponentInstance,
   setupComponent,
 } from './component'
+import { shouldUpdateComponent } from './componentUpdateUtils'
 import { createAppAPI } from './createApp'
 import { VNode } from './vnode'
 import { Fragment, Text } from './vnode'
@@ -91,7 +92,7 @@ export const createRenderer = <HostElement = RendererNode>(
     vnode: VNode<HostElement>,
     container: HostElement
   ) => {
-    effect(() => {
+    instance.update = effect(() => {
       if (!instance.isMounted) {
         const subTree = (instance.subTree = instance.render.call(
           instance.proxy
@@ -102,6 +103,15 @@ export const createRenderer = <HostElement = RendererNode>(
         vnode.el = subTree.el
         instance.isMounted = true
       } else {
+        //更新组件本身
+        const { next, vnode } = instance
+        if (next) {
+          next.el = vnode.el
+
+          updateComponentPreRender(instance, next)
+        }
+
+        //更新他的子树
         const prevSubTree = instance.subTree
         const subTree = instance.render.call(instance.proxy)
         instance.subTree = subTree
@@ -117,7 +127,11 @@ export const createRenderer = <HostElement = RendererNode>(
     container: HostElement,
     parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
-    mountComponent(n2, container, parentComponent)
+    if (!n1) {
+      mountComponent(n2, container, parentComponent)
+    } else {
+      updateComponent(n1, n2)
+    }
   }
 
   const mountComponent = (
@@ -125,7 +139,10 @@ export const createRenderer = <HostElement = RendererNode>(
     container: HostElement,
     parentComponent: ComponentInternalInstance<HostElement> | null
   ) => {
-    const instance = createComponentInstance(vnode, parentComponent)
+    const instance = (vnode.component = createComponentInstance(
+      vnode,
+      parentComponent
+    ))
     setupComponent(instance)
     setupRenderEffect(instance, vnode, container)
   }
@@ -425,12 +442,24 @@ export const createRenderer = <HostElement = RendererNode>(
       anchor
     )
   }
-  function processText(
+
+  const updateComponent = (n1: VNode<HostElement>, n2: VNode<HostElement>) => {
+    const instance = (n2.component = n1.component)
+    if (shouldUpdateComponent(n1, n2)) {
+      instance!.next = n2
+      instance!.update()
+    } else {
+      n2.el = n1.el
+      instance!.vnode = n2
+    }
+  }
+
+  const processText = (
     n1: VNode<HostElement> | null,
     n2: VNode<HostElement>,
     container: HostElement,
     anchor: HostElement | null
-  ) {
+  ) => {
     const text = n2.children as string
     const textNode = (n2.el = hostCreateText(text) as any)
     hostInsert(textNode, container, anchor)
@@ -472,4 +501,13 @@ const getLIS = (nums: number[]): number[] => {
   }
 
   return tails
+}
+
+const updateComponentPreRender = (
+  instance: ComponentInternalInstance,
+  next: VNode
+) => {
+  instance.props = next.props
+  instance.vnode = next
+  instance.next = null
 }

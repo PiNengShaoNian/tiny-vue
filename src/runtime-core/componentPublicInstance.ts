@@ -4,6 +4,7 @@ import { ComponentInternalInstance } from './component'
 const publicPropertiesMap = {
   $el: (i: ComponentInternalInstance) => i.vnode.el,
   $slots: (i: ComponentInternalInstance) => i.slots,
+  $props: (i: ComponentInternalInstance) => i.props,
 } as const
 
 type PublicInstanceInternalProperties = keyof typeof publicPropertiesMap

@@ -1,4 +1,5 @@
 import { ShapeFlag, ShapeFlags } from '../shared/ShapeFlags'
+import { ComponentInternalInstance } from './component'
 import { RendererNode } from './renderer'
 
 export const Fragment = Symbol()
@@ -7,11 +8,12 @@ export const Text = Symbol()
 
 export type VNode<HostElement = RendererNode> = {
   type: ComponentType
-  props: unknown
+  props: null | Record<string, any>
   children: undefined | string | VNode[]
   el: HostElement | null
   shapeFlag: ShapeFlag
   key: string | number | null
+  component: null | ComponentInternalInstance<HostElement>
 }
 
 export type Component = {
@@ -36,6 +38,7 @@ export const createVNode = <HostElement = RendererNode>(
     el: null,
     key: props?.key ?? null,
     shapeFlag: getShapeFlag(type),
+    component: null,
   }
 
   if (typeof children === 'string') {
