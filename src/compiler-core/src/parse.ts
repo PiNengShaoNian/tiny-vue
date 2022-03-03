@@ -4,6 +4,11 @@ type ParserContext = {
   source: string
 }
 
+const enum TagType {
+  Start,
+  End,
+}
+
 export const baseParse = (content: string) => {
   const context = createParserContext(content)
 
@@ -11,14 +16,41 @@ export const baseParse = (content: string) => {
 }
 
 const parseChildren = (context: ParserContext) => {
-  const nodes: unknown[] = []
+  const nodes: any[] = []
 
   let node
-  if (context.source.startsWith('{{')) {
+  const s = context.source
+  if (s.startsWith('{{')) {
     node = parseInterpolation(context)
+  } else if (s[0] === '<') {
+    const firstChar = s[1]
+    if (firstChar >= 'a' && firstChar <= 'z') {
+      node = parseElement(context)
+    }
   }
+
   nodes.push(node)
   return nodes
+}
+
+const parseTag = (context: ParserContext, tagType: TagType) => {
+  const match = /^<\/?([a-z]*)/i.exec(context.source)
+  const tag = match![1]
+
+  advanceBy(context, match![0].length)
+  advanceBy(context, 1)
+
+  return {
+    type: NodeTypes.ELEMENT,
+    tag: tag,
+  }
+}
+
+const parseElement = (context: ParserContext) => {
+  const element = parseTag(context, TagType.Start)
+  parseTag(context, TagType.End)
+
+  return element
 }
 
 const advanceBy = (context: ParserContext, length: number) => {
