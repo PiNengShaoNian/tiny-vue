@@ -9,31 +9,57 @@ const enum TagType {
   End,
 }
 
+type ASTNode = {
+  content?: any
+  children?: ASTNode[]
+  type: NodeTypes
+  tag?: string
+}
+
 export const baseParse = (content: string) => {
   const context = createParserContext(content)
 
-  return createRoot(parseChildren(context))
+  return createRoot(parseChildren(context, []))
 }
 
-const parseChildren = (context: ParserContext) => {
-  const nodes: any[] = []
-
-  let node
+const isEnd = (context: ParserContext, ancestors: string[]) => {
   const s = context.source
-  if (s.startsWith('{{')) {
-    node = parseInterpolation(context)
-  } else if (s[0] === '<') {
-    const firstChar = s[1]
-    if (firstChar >= 'a' && firstChar <= 'z') {
-      node = parseElement(context)
+  if (s.startsWith('</')) {
+    const n = ancestors.length
+    const startTag = ancestors[n - 1]
+
+    if (!s.startsWith(`</${startTag}>`)) {
+      throw new Error(`Missing end tag ${startTag}`)
+    } else {
+      return true
     }
   }
 
-  if (!node) {
-    node = parseText(context)
+  return !s.length
+}
+
+const parseChildren = (context: ParserContext, ancestors: string[]) => {
+  const nodes: any[] = []
+
+  while (!isEnd(context, ancestors)) {
+    let node
+    const s = context.source
+    if (s.startsWith('{{')) {
+      node = parseInterpolation(context)
+    } else if (s[0] === '<') {
+      const firstChar = s[1]
+      if (firstChar >= 'a' && firstChar <= 'z') {
+        node = parseElement(context, ancestors)
+      }
+    }
+
+    if (!node) {
+      node = parseText(context)
+    }
+
+    nodes.push(node)
   }
 
-  nodes.push(node)
   return nodes
 }
 
@@ -45,7 +71,19 @@ const parseTextData = (context: ParserContext, length: number) => {
 }
 
 const parseText = (context: ParserContext) => {
-  const content = parseTextData(context, context.source.length)
+  let endIndex = context.source.length
+  const endToken = ['{{', '<']
+  const n = endToken.length
+
+  for (let i = 0; i < n; ++i) {
+    const index = context.source.indexOf(endToken[i])
+
+    if (index !== -1 && index < endIndex) {
+      endIndex = index
+    }
+  }
+
+  const content = parseTextData(context, endIndex)
 
   advanceBy(context, content.length)
   return {
@@ -54,7 +92,7 @@ const parseText = (context: ParserContext) => {
   }
 }
 
-const parseTag = (context: ParserContext, tagType: TagType) => {
+const parseTag = (context: ParserContext, tagType: TagType): ASTNode => {
   const match = /^<\/?([a-z]*)/i.exec(context.source)
   const tag = match![1]
 
@@ -67,8 +105,16 @@ const parseTag = (context: ParserContext, tagType: TagType) => {
   }
 }
 
-const parseElement = (context: ParserContext) => {
+const parseElement = (context: ParserContext, ancestors: string[]) => {
   const element = parseTag(context, TagType.Start)
+  ancestors.push(element.tag!)
+  element.children = parseChildren(context, ancestors)
+  ancestors.pop()
+
+  if (context.source.slice(2, 2 + element.tag!.length) !== element.tag) {
+    throw new Error(`Missing end tag ${element.tag}`)
+  }
+
   parseTag(context, TagType.End)
 
   return element
@@ -102,7 +148,7 @@ const parseInterpolation = (context: ParserContext) => {
   }
 }
 
-const createRoot = (children: unknown) => {
+const createRoot = (children: ASTNode[]) => {
   return {
     children,
   }
