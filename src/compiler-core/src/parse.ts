@@ -29,8 +29,29 @@ const parseChildren = (context: ParserContext) => {
     }
   }
 
+  if (!node) {
+    node = parseText(context)
+  }
+
   nodes.push(node)
   return nodes
+}
+
+const parseTextData = (context: ParserContext, length: number) => {
+  const s = context.source
+  const content = s.slice(0, length)
+
+  return content
+}
+
+const parseText = (context: ParserContext) => {
+  const content = parseTextData(context, context.source.length)
+
+  advanceBy(context, content.length)
+  return {
+    type: NodeTypes.TEXT,
+    content: content,
+  }
 }
 
 const parseTag = (context: ParserContext, tagType: TagType) => {
@@ -67,7 +88,8 @@ const parseInterpolation = (context: ParserContext) => {
 
   advanceBy(context, openDelimiter.length)
   const rawContentLength = closeIndex - openDelimiter.length
-  const rawContent = context.source.slice(0, rawContentLength)
+
+  const rawContent = parseTextData(context, rawContentLength)
   const content = rawContent.trim()
   advanceBy(context, rawContentLength + closeDelimiter.length)
 
