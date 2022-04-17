@@ -15,9 +15,10 @@ export type ASTNode = {
   type: NodeTypes
   tag?: string
   codegenNode?: ASTNode
+  helpers?: symbol[]
 }
 
-export const baseParse = (content: string) => {
+export const baseParse = (content: string): ASTNode => {
   const context = createParserContext(content)
 
   return createRoot(parseChildren(context, []))
@@ -149,9 +150,10 @@ const parseInterpolation = (context: ParserContext) => {
   }
 }
 
-const createRoot = (children: ASTNode[]) => {
+const createRoot = (children: ASTNode[]): ASTNode => {
   return {
     children,
+    type: NodeTypes.ROOT,
   }
 }
 
