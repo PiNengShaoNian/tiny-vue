@@ -14,6 +14,7 @@ export type ASTNode = {
   children?: ASTNode[]
   type: NodeTypes
   tag?: string
+  codegenNode?: ASTNode
 }
 
 export const baseParse = (content: string) => {

@@ -24,6 +24,12 @@ const createTransformContext = (
 export const transform = (root: ASTNode, options: TransformOptions = {}) => {
   const context = createTransformContext(root, options)
   traverseNode(root, context)
+
+  createRootCodegen(root)
+}
+
+const createRootCodegen = (root: ASTNode) => {
+  root.codegenNode = root.children?.[0]
 }
 
 const traverseNode = (node: ASTNode, context: TransformContext) => {
