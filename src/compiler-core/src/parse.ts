@@ -9,7 +9,7 @@ const enum TagType {
   End,
 }
 
-type ASTNode = {
+export type ASTNode = {
   content?: any
   children?: ASTNode[]
   type: NodeTypes
